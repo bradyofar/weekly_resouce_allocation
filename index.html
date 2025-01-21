@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logistic Growth Model</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* General Styling */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #f1623c, #d54b32);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 2.5rem;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 80%;
+      max-width: 1200px;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .input-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .input-group {
+      margin: 10px;
+    }
+
+    .input-group label {
+      font-size: 1.2rem;
+      margin-right: 10px;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    .input-group input {
+      font-size: 1.2rem;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      width: 200px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      background: #fff;
+      color: #333;
+    }
+
+    .input-container button {
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      margin-left: 15px;
+      background: #f1623c;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .input-container button:hover {
+      background: #d54b32;
+      transform: scale(1.05);
+    }
+
+    #output {
+      font-size: 1.3rem;
+      margin: 20px 0;
+      text-align: center;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+      line-height: 1.8;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Resource Allocation Model</h1>
+
+  <div class="container">
+    <div class="input-container">
+      <div class="input-group">
+        <label for="budget">Enter Budget (&pound;):</label>
+        <input type="number" id="budget" >
+      </div>
+      <div class="input-group">
+        <label for="weeks">Campaign Length (weeks):</label>
+        <input type="number" id="weeks" >
+      </div>
+      <button onclick="calculate()">Calculate</button>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    // Median hours data
+    const hoursData = {
+      L: [6.0, 9.5, 8.0, 12.0, 11.4, 13.5, 10.8, 12.0, 16.0, 10.5, 10.0, 12.4, 8.8, 7.0, 11.6, 8.0, 13.8, 12.5, 7.0, 16.0, 10.0, 5.0, 11.3, 8.0, 9.0, 18.8, 18.3, 7.3, 7.5, 4.3, 11.0, 7.0, 3.0, 4.5, 15.8, 7.1, 11.1, 10.8, 10.1, 7.5, 7.0, 9.0, 5.0, 4.5, 14.0, 14.0, 15.0, 15.0, 11.0, 10.0, 6.0, 8.0],
+      M: [5.0, 10.0, 7.5, 8.0, 8.3, 10.3, 7.0, 11.0, 10.5, 14.4, 9.6, 10.5, 10.0, 7.3, 10.0, 11.0, 10.0, 10.0, 11.0, 7.5, 7.5, 6.5, 8.3, 4.5, 4.0, 3.0, 5.0, 4.8, 4.0, 5.8, 4.0, 3.0, 5.0, 6.0, 4.0, 4.0, 3.3, 2.5, 4.5, 4.0, 4.0, 3.0, 5.0, 5.0, 4.0, 4.0, 4.0, 3.0, 3.0, 2.5, 5.0, 3.0],
+      S: [5.0, 4.0, 5.5, 4.5, 3.5, 4.5, 4.3, 3.5, 3.5, 5.0, 4.5, 4.5, 3.5, 3.3, 4.8, 5.3, 3.5, 6.0, 7.0, 8.3, 4.0, 4.3, 5.0, 3.5, 4.0, 3.0, 3.8, 5.5, 2.9, 3.0, 4.8, 2.0, 7.3, 4.3, 5.1, 2.5, 2.5, 5.3, 2.5, 1.8, 8.5, 10.3, 5.0, 7.0, 7.0, 12.5, 8.0, 8.0, 11.0, 18.5, 6.9, 1.5]
+    };
+
+    // Logistic growth model parameters
+    const L = 434.69;
+    const k = 0.00000379;
+    const x0 = 418921.43;
+
+    // Logistic growth function
+    function logistic(x) {
+      return L / (1 + Math.exp(-k * (x - x0)));
+    }
+
+    // Calculate weekly allocation
+    function calculate() {
+      const budget = parseFloat(document.getElementById('budget').value);
+      const weeks = parseInt(document.getElementById('weeks').value);
+
+      if (isNaN(budget) || isNaN(weeks) || budget <= 0 || weeks <= 0 || weeks > 53) {
+        document.getElementById('output').textContent = "Please enter valid inputs.";
+        return;
+      }
+
+      const totalHours = logistic(budget);
+      let dealSize;
+
+      if (budget < 100000) {
+        dealSize = 'S';
+      } else if (budget <= 500000) {
+        dealSize = 'M';
+      } else {
+        dealSize = 'L';
+      }
+
+      const columnData = hoursData[dealSize].slice(0, weeks);
+      const totalColumnHours = columnData.reduce((sum, value) => sum + value, 0);
+      const weeklyPercentages = columnData.map(value => ((value / totalColumnHours) * totalHours).toFixed(0));
+
+      document.getElementById('output').innerHTML = `
+        <strong>Total Hours:</strong> ${totalHours.toFixed(0)}<br>
+        <strong>Weekly Allocation:</strong><br>
+        ${weeklyPercentages.map((p, i) => `<span style='display: block;'>Week ${i + 1}: ${p} hours</span>`).join("")}
+      `;
+    }
+  </script>
+</body>
+</html>
